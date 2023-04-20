@@ -1,24 +1,38 @@
-import random
 import json
+import numpy as np
 
-# 定义科室列表
-department_names = [f"科室{i}" for i in range(1, 11)]
-departments = [{"id": i+1, "name": department_names[i], "rotation_duration": f"{(i+1)*4}周"} for i in range(10)]
+# 从本地文件加载JSON数据
+def load_json_data(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        return json.load(file)
 
-# 定义学生列表
-students = []
-for i in range(1, 21):
-    student = {"id": i, "name": f"学生{i}"}
-    # 随机选择8个科室
-    department_ids = random.sample(range(1, 11), 8)
-    student["department_ids"] = department_ids
-    students.append(student)
+# 增加科室数量
+def expand_departments(student, departments):
+    expanded_departments = []
+    for department_id in student["department_ids"]:
+        department =next((dept for dept in departments if dept["id"] == department_id), None)
+        if department:
+            duration = int(department["rotation_duration"])
+            expanded_departments.extend([department_id] * duration)
+    return expanded_departments
 
-# 生成JSON数据
-data = {"departments": departments, "students": students}
+def main():
+    students_file = "students.json"
+    departments_file = "departments.json"
 
-# 将JSON数据写入文件
-with open('students.json', 'w', encoding='utf-8') as f:
-    json.dump(data, f, ensure_ascii=False, indent=4)
+    raw_students_data = load_json_data(students_file)
+    students_data = raw_students_data["students"]  # 获取students列表
+    departments_data = load_json_data(departments_file)
 
-print("JSON文件已生成！")
+    expanded_students_departments = []
+
+    for student in students_data:  # 直接遍历students列表
+        expanded_departments = expand_departments(student, departments_data)
+        expanded_students_departments.append(expanded_departments)
+
+    rotation_matrix = np.array(expanded_students_departments)
+
+    print(rotation_matrix)
+
+if __name__ == "__main__":
+    main()
