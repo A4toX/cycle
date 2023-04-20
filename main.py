@@ -1,103 +1,77 @@
 import random
-from deap import base
-from deap import creator
-from deap import tools
-import pandas as pd
+import numpy as np
 
-DEPARTMENTS = {'A': 1, 'B': 2, 'C': 2, 'D': 2, 'E': 2, 'F': 2, 'G': 2}
-STUDENTS = list(range(1, 21))
+def generate_initial_population(num_students, departments):
+    population = []
+    for _ in range(num_students):
+        individual = random.sample(departments, len(departments))
+        population.append(individual)
+    return population
 
-creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMin)
+def fitness(schedule, num_students, departments_duration, max_students_per_department):
+    fitness_value = 0
+    for month in range(1, 15):
+        dept_count = {dept: 0 for dept in departments_duration}
+        for student in range(num_students):
+            for dept, duration in [(dept, departments_duration[dept]) for dept in schedule[student]]:
+                if month >= duration:
+                    month -= duration
+                    dept_count[dept] += 1
+                    break
+        if all([count <= max_students_per_department for count in dept_count.values()]):
+            fitness_value += 1
+    return fitness_value
 
-toolbox = base.Toolbox()
 
-toolbox.register("department", random.choice, list(DEPARTMENTS.keys()))
-toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.department, n=len(DEPARTMENTS))
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+def crossover(parent1, parent2, num_students):
+    crossover_point = random.randint(1, num_students - 1)
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+    return child1, child2
 
-DISTANCE_MATRIX = [
-    [0, 1, 2, 3, 4, 5, 6],
-    [1, 0, 1, 2, 3, 4, 5],
-    [2, 1, 0, 1, 2, 3, 4],
-    [3, 2, 1, 0, 1, 2, 3],
-    [4, 3, 2, 1, 0, 1, 2],
-    [5, 4, 3, 2, 1, 0, 1],
-    [6, 5, 4, 3, 2, 1, 0],
-]
+def mutate(individual, departments):
+    i, j = random.sample(range(len(individual)), 2)
+    individual[i], individual[j] = individual[j], individual[i]
+    return individual
 
-def evalScheduling(individual, distance_matrix=DISTANCE_MATRIX):
-    total_distance = 0
-    student_schedule = individual
+def genetic_algorithm(num_students, departments_duration, max_students_per_department, population_size=100, generations=1000, mutation_rate=0.1):
+    departments = list(departments_duration.keys())
+    population = [generate_initial_population(num_students, departments) for _ in range(population_size)]
 
-    for i, department in enumerate(student_schedule[1:]):
-        previous_department = student_schedule[i]
-        distance = distance_matrix[list(DEPARTMENTS.keys()).index(previous_department)][list(DEPARTMENTS.keys()).index(department)]
-        total_distance += distance
+    for gen in range(generations):
+        population_fitness = [fitness(ind, num_students, departments_duration, max_students_per_department) for ind in population]
+        if max(population_fitness) == 14:  # 最大适应度值为14，因为总共有14个月
+            break
 
-    return total_distance,
+        new_population = []
+        for _ in range(population_size // 2):
+            parents = random.choices(population, weights=population_fitness, k=2)
+            children = crossover(parents[0], parents[1], num_students)
 
-def cxPartialyMatchedStrings(ind1, ind2):
-    size = min(len(ind1), len(ind2))
-    p1, p2 = [-1] * size, [-1] * size
+            if random.random() < mutation_rate:
+                children = (mutate(children[0], departments), mutate(children[1], departments))
 
-    for i in range(size):
-        if i < size // 2:
-            p1[i] = ind1[i]
-            p2[i] = ind2[i]
-        else:
-            p1[ind1[i]] = i
-            p2[ind2[i]] = i
+            new_population.extend(children)
 
-    for i in range(size):
-        if p1[i] == -1:
-            p1[i] = ind1[p2[i]]
-        if p2[i] == -1:
-            p2[i] = ind2[p1[i]]
+        population = new_population
 
-    ind1[:], ind2[:] = p1[:], p2[:]
-    return ind1, ind2
+    best_individual = population[np.argmax(population_fitness)]
 
-toolbox.register("evaluate", evalScheduling)
-toolbox.register("mate", cxPartialyMatchedStrings)
-toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
-toolbox.register("select", tools.selTournament, tournsize=3)
+    # 将科室和轮转时长重新组合
+    best_schedule = []
+    for student in best_individual:
+        student_schedule = []
+        for dept in student:
+            student_schedule.append((dept, departments_duration[dept]))
+        best_schedule.append(student_schedule)
 
-def main():
-    random.seed(42)
-    pop = toolbox.population(n=50 * len(STUDENTS))
-
-    CXPB, MUTPB, NGEN = 0.7, 0.2, 50
-
-    fitnesses = list(map(toolbox.evaluate, pop))
-    for ind, fit in zip(pop, fitnesses):
-        ind.fitness.values = fit
-
-    for g in range(NGEN):
-        offspring = toolbox.select(pop, len(pop))
-        offspring = list(offspring)
-
-        for child1, child2 in zip(offspring[::2], offspring[1::2]):
-            if random.random() < CXPB:
-                toolbox.mate(child1, child2)
-                del child1.fitness.values
-                del child2.fitness.values
-
-        for mutant in offspring:
-            if random.random() < MUTPB:
-                toolbox.mutate(mutant)
-                del mutant.fitness.values
-
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = map(toolbox.evaluate, invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
-
-        pop[:] = offspring
-
-    best_individuals = tools.selBest(pop,1)
-    best_ind = tools.selBest(pop, 1)[0]
-    print("Best individual is: %s\nwith fitness: %s" % (best_ind, best_ind.fitness.values))
+    return best_schedule
 
 if __name__ == "__main__":
-    main()
+    num_students = 20
+    departments_duration = {'A': 1, 'B': 2, 'C': 3, 'D': 2, 'E': 2, 'F': 2, 'G': 2}
+    max_students_per_department = 3
+
+    best_solution = genetic_algorithm(num_students, departments_duration, max_students_per_department)
+    for idx, student_schedule in enumerate(best_solution):
+        print(f"Student {idx + 1}: {student_schedule}")
