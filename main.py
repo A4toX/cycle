@@ -1,101 +1,68 @@
-
 import random
+from deap import base, creator, tools, algorithms
+from collections import namedtuple
+from statistics import mean
 
-class Student:
-    def __init__(self, id):
-        self.id = id
+# 科室和学员信息
+departments = {'A': 1, 'B': 2, 'C': 2, 'D': 2, 'E': 2, 'F': 2, 'G': 2}
+students = list(range(1, 21))
 
-class Department:
-    def __init__(self, id, duration, capacity):
-        self.id = id
-        self.duration = duration
-        self.capacity = capacity
+# 计算每个科室每个月的最佳人数
+total_months = sum(departments.values())
+optimal_students_per_dept = {dept: (len(students) * duration) / total_months for dept, duration in departments.items()}
 
-class RotationSolution:
-    def __init__(self, students, departments, months):
-        self.schedule = {student.id: [(None, 0)] * months for student in students}
-        self.departments = departments
+# 定义遗传算法相关参数
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMin)
 
-    def initialize(self):
-        for student_id in self.schedule.keys():
-            department_order = random.sample(self.departments, len(self.departments))
-            month = 0
-            for dept in department_order:
-                self.schedule[student_id][month:(month + dept.duration)] = [(dept.id, dept.capacity)] * dept.duration
-                month += dept.duration
+toolbox = base.Toolbox()
+toolbox.register("department", random.choice, list(departments.keys()))
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.department, len(departments))
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-class GeneticAlgorithm:
-    def __init__(self, students, departments, population_size, generations, months):
-        self.students = students
-        self.departments = departments
-        self.population_size = population_size
-        self.generations = generations
-        self.months = months
 
-    def crossover(self, parent1, parent2):
-        child1, child2 = RotationSolution(self.students, self.departments, self.months), RotationSolution(self.students, self.departments, self.months)
-        for student_id in parent1.schedule.keys():
-            crossover_point = random.randint(1, len(parent1.schedule[student_id]) - 1)
-            child1.schedule[student_id] = parent1.schedule[student_id][:crossover_point] + parent2.schedule[student_id][crossover_point:]
-            child2.schedule[student_id] = parent2.schedule[student_id][:crossover_point] + parent1.schedule[student_id][crossover_point:]
-        return child1, child2
+def eval_schedule(individual):
+    student_dept_counts = {dept: 0 for dept in departments}
 
-    def mutation(self, individual):
-        student_id = random.choice(self.students).id
-        swap_index1, swap_index2 = random.sample(range(len(self.departments)), 2)
-        individual.schedule[student_id][swap_index1], individual.schedule[student_id][swap_index2] = individual.schedule[student_id][swap_index2], individual.schedule[student_id][swap_index1]
-        return individual
+    for dept in individual:
+        student_dept_counts[dept] += 1
 
-    def run(self):
-        population = [RotationSolution(self.students, self.departments, self.months) for _ in range(self.population_size)]
-        for ind in population:
-            ind.initialize()
+    deviation = sum((optimal_students_per_dept[dept] - count) ** 2 for dept, count in student_dept_counts.items())
+    return deviation,
 
-        for generation in range(self.generations):
-            new_population = []
-            while len(new_population) < self.population_size:
-                parent1, parent2 = random.sample(population, 2)
-                child1, child2 = self.crossover(parent1, parent2)
 
-                if random.random() < 0.1:  # mutation probability
-                    child1 = self.mutation(child1)
-                    child2 = self.mutation(child2)
+toolbox.register("evaluate", eval_schedule)
+toolbox.register("mate", tools.cxUniform, indpb=0.5)
+toolbox.register("mutate", tools.mutUniformInt, low=0, up=len(departments) - 1, indpb=0.2)
+toolbox.register("select", tools.selTournament, tournsize=3)
 
-                new_population.extend([child1, child2])
 
-            population = new_population
-
-        best_solution = min(population, key=lambda x: self.calculate_fitness(x))
-        return best_solution
-
-    def calculate_fitness(self, individual):
-        fitness = 0
-        for student_id in individual.schedule.keys():
-            # Requirement 2: Each department only once per student
-            unique_departments = set([dept_id for dept_id, _ in individual.schedule[student_id] if dept_id is not None])
-            if len(unique_departments) != len(self.departments):
-                fitness += 1
-
-            # Requirement 3: Limit students per department based on capacity
-            student_counts = {dept.id: 0 for dept in self.departments}
-            for _, (dept_id, capacity) in enumerate(individual.schedule[student_id]):
-                if dept_id is not None:
-                    student_counts[dept_id] += 1
-                    if student_counts[dept_id] > capacity:
-                        fitness += 1
-
-        return fitness
-
+# 遗传算法主程序
 def main():
-    students = [Student(id=i) for i in range(1, 21)]
-    departments = [Department(id=chr(65 + i), duration=1, capacity=2) for i in range(7)]
+    random.seed(42)
 
-    ga = GeneticAlgorithm(students, departments, population_size=100, generations=200, months=len(departments))
-    solution = ga.run()
+    pop = toolbox.population(n=50)
+    hof = tools.HallOfFame(1)
+    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats.register("avg", mean)
+    stats.register("min", tools.selBest, k=1)
 
-    for student_id, rotation_order in solution.schedule.items():
-        departments_string = ' '.join([dept_id for dept_id, _ in rotation_order if dept_id is not None])
-        print(f"{student_id}: {departments_string}")
+    population, logbook = algorithms.eaSimple(
+        pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=100,
+        stats=stats, halloffame=hof, verbose=True)
 
-if __name__ == '__main__':
-    main()
+    return hof[0]
+
+
+# 执行遗传算法
+best_schedule = main()
+
+# 输出结果
+StudentSchedule = namedtuple("StudentSchedule", ["id", "departments"])
+schedules = []
+
+for student_id, department in zip(students, best_schedule):
+    schedules.append(StudentSchedule(student_id, department))
+
+for schedule in schedules:
+    print(f"{schedule.id} {' '.join(schedule.departments)}")
