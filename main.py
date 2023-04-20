@@ -17,10 +17,11 @@ def evalScheduling(individual):
 
     for i, department in enumerate(student_schedule[1:]):
         previous_department = student_schedule[i]
-        distance = DISTANCES[previous_department][department]
+        distance = DISTANCE_MATRIX[previous_department][department]
         total_distance += distance * STUDENTS_WEIGHTS[STUDENTS.index(individual)]
 
     return total_distance,
+
 
 
 
