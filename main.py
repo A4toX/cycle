@@ -6,7 +6,7 @@ from deap import algorithms
 from statistics import mean
 
 def evalOneMax(individual):
-    return sum(individual)
+    return sum(individual),
 
 def main():
     random.seed(64)
@@ -31,7 +31,7 @@ def main():
 
     population = toolbox.population(n=POP_SIZE)
 
-    stats = tools.Statistics(key=lambda ind: ind.fitness.values)
+    stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", mean)
     stats.register("min", min)
     stats.register("max", max)
