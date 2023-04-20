@@ -31,7 +31,7 @@ def main():
 
     population = toolbox.population(n=POP_SIZE)
 
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats = tools.Statistics(lambda ind: ind.fitness.values[0])
     stats.register("avg", mean)
     stats.register("min", min)
     stats.register("max", max)
