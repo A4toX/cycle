@@ -1,77 +1,53 @@
-import random
-import numpy as np
+import json
+from ortools.linear_solver import pywraplp
 
-def generate_initial_population(num_students, departments):
-    population = []
-    for _ in range(num_students):
-        individual = random.sample(departments, len(departments))
-        population.append(individual)
-    return population
+# 读取数据
+with open("students.json", "r", encoding="utf-8") as f:
+    students = json.load(f)
 
-def fitness(schedule, num_students, departments_duration, max_students_per_department):
-    fitness_value = 0
-    for month in range(1, 15):
-        dept_count = {dept: 0 for dept in departments_duration}
-        for student in range(num_students):
-            for dept, duration in [(dept, departments_duration[dept]) for dept in schedule[student]]:
-                if month >= duration:
-                    month -= duration
-                    dept_count[dept] += 1
-                    break
-        if all([count <= max_students_per_department for count in dept_count.values()]):
-            fitness_value += 1
-    return fitness_value
+with open("dept.json", "r", encoding="utf-8") as f:
+    departments = json.load(f)
+
+with open("rules.json", "r", encoding="utf-8") as f:
+    rotation_rules = json.load(f)
+
+# 定义线性规划求解器
+solver = pywraplp.Solver.CreateSolver("GLOP")
+
+# 定义变量
+x = {}
+for s in students:
+    for d in departments:
+        x[(s["id"], d["name"])] = solver.BoolVar(f"x_{s['id']}_{d['name']}")
 
 
-def crossover(parent1, parent2, num_students):
-    crossover_point = random.randint(1, num_students - 1)
-    child1 = parent1[:crossover_point] + parent2[crossover_point:]
-    child2 = parent2[:crossover_point] + parent1[crossover_point:]
-    return child1, child2
+# 定义约束条件
+# 1. 每个学生必须轮转到所有科室
+for s in students:
+    solver.Add(sum(x[(s["id"], d["name"])] for d in departments) == len(departments))
 
-def mutate(individual, departments):
-    i, j = random.sample(range(len(individual)), 2)
-    individual[i], individual[j] = individual[j], individual[i]
-    return individual
+# 2. 每个科室，每个学生只去一次
+for d in departments:
+    for s in students:
+        solver.Add(sum(x[(s["id"], d["name"])] for d in departments) == 1)
 
-def genetic_algorithm(num_students, departments_duration, max_students_per_department, population_size=100, generations=1000, mutation_rate=0.1):
-    departments = list(departments_duration.keys())
-    population = [generate_initial_population(num_students, departments) for _ in range(population_size)]
+# 3. 计算每个科室每个时间单位的平均人数，并且保证人数尽量控制在平均人数左右
+avg_students_per_dept = len(students) * rotation_rules["total_duration"] / sum(d["duration"] for d in departments)
+for d in departments:
+    solver.Add(sum(x[(s["id"], d["name"])] * d["duration"] for s in students) <= avg_students_per_dept * d["duration"])
+    solver.Add(sum(x[(s["id"], d["name"])] * d["duration"] for s in students) >= avg_students_per_dept * d["duration"] - 1)
 
-    for gen in range(generations):
-        population_fitness = [fitness(ind, num_students, departments_duration, max_students_per_department) for ind in population]
-        if max(population_fitness) == 14:  # 最大适应度值为14，因为总共有14个月
-            break
+# 定义目标函数
+solver.Minimize(solver.Sum(x[(s["id"], d["name"])] * d["duration"] for s in students for d in departments))
 
-        new_population = []
-        for _ in range(population_size // 2):
-            parents = random.choices(population, weights=population_fitness, k=2)
-            children = crossover(parents[0], parents[1], num_students)
+# 求解
+status = solver.Solve()
 
-            if random.random() < mutation_rate:
-                children = (mutate(children[0], departments), mutate(children[1], departments))
-
-            new_population.extend(children)
-
-        population = new_population
-
-    best_individual = population[np.argmax(population_fitness)]
-
-    # 将科室和轮转时长重新组合
-    best_schedule = []
-    for student in best_individual:
-        student_schedule = []
-        for dept in student:
-            student_schedule.append((dept, departments_duration[dept]))
-        best_schedule.append(student_schedule)
-
-    return best_schedule
-
-if __name__ == "__main__":
-    num_students = 20
-    departments_duration = {'A': 1, 'B': 2, 'C': 3, 'D': 2, 'E': 2, 'F': 2, 'G': 2}
-    max_students_per_department = 3
-
-    best_solution = genetic_algorithm(num_students, departments_duration, max_students_per_department)
-    for idx, student_schedule in enumerate(best_solution):
-        print(f"Student {idx + 1}: {student_schedule}")
+# 输出结果
+if status == pywraplp.Solver.OPTIMAL:
+    print("Objective value =", solver.Objective().Value())
+    for s in students:
+        assigned_depts = [d["name"] for d in departments if x[(s["id"], d["name"])].solution_value() == 1]
+        print(f"{s['id']} {' '.join(assigned_depts)}")
+else:
+    print("The problem does not have an optimal solution.")
