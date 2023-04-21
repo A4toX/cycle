@@ -1,105 +1,104 @@
 {
     "students": [
         {
-
             "id": 1,
             "name": "学生1",
-            "department_ids": [4, 6, 8, 1, 10, 5, 7, 9, 2, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 2,
             "name": "学生2",
-            "department_ids": [9, 3, 5, 1, 6, 10, 7, 2, 8, 4]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 3,
             "name": "学生3",
-            "department_ids": [5, 7, 6, 2, 1, 10, 9, 8, 4, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 4,
             "name": "学生4",
-            "department_ids": [3, 10, 6, 8, 7, 5, 2, 4, 9, 1]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 5,
             "name": "学生5",
-            "department_ids": [2, 9, 7, 4, 6, 3, 5, 8, 1, 10]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 6,
             "name": "学生6",
-            "department_ids": [8, 4, 9, 2, 10, 7, 1, 6, 5, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 7,
             "name": "学生7",
-            "department_ids": [7, 1, 3, 8, 4, 9, 6, 5, 10, 2]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 8,
             "name": "学生8",
-            "department_ids": [6, 1, 2, 10, 5, 8, 7, 9, 3, 4]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 9,
             "name": "学生9",
-            "department_ids": [9, 7, 1, 6, 3, 2, 8, 5, 10, 4]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 10,
             "name": "学生10",
-            "department_ids": [5, 8, 10, 9, 6, 1, 7, 3, 2, 4]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 11,
             "name": "学生11",
-            "department_ids": [8, 5, 4, 6, 2, 1, 3, 9, 10, 7]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 12,
             "name": "学生12",
-            "department_ids": [9, 3, 6, 10, 2, 1, 7, 8, 5, 4]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 13,
             "name": "学生13",
-            "department_ids": [1, 6, 2, 9, 10, 8, 7, 5, 4, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 14,
             "name": "学生14",
-            "department_ids": [10, 5, 2, 6, 1, 4, 9, 3, 8, 7]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 15,
             "name": "学生15",
-            "department_ids": [4, 7, 6, 2, 1, 8, 10, 9, 5, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 16,
             "name": "学生16",
-            "department_ids": [3, 9, 2, 10, 1, 8, 6, 4, 5, 7]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 17,
             "name": "学生17",
-            "department_ids": [8, 1, 9, 5, 7, 6, 2, 4, 10, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 18,
             "name": "学生18",
-            "department_ids": [2, 6, 10, 8, 9, 5, 1, 4, 3, 7]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 19,
             "name": "学生19",
-            "department_ids": [3, 10, 1, 6, 8, 7, 9, 2, 5, 4]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         },
         {
             "id": 20,
             "name": "学生20",
-            "department_ids": [7, 9, 2, 1, 10, 5, 6, 8, 4, 3]
+            "department_ids": [1, 2, 3, 4, 5, 6]
         }
     ]
 }
