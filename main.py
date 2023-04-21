@@ -60,12 +60,12 @@ total_months = len(students[0]["expanded_department_ids"])
 # 初始化一个空的字典，用于在每个时间单位内存储每个科室的学生
 schedule = {dept["id"]: [""] * total_months for dept in departments}
 
-# 为每个科室的每个时间单位分配学生
+# 为每个科室的每个时间单位分配学生ID
 for student in students:
     for month, dept_id in enumerate(student["expanded_department_ids"]):
         if schedule[dept_id][month]:
             schedule[dept_id][month] += ", "
-        schedule[dept_id][month] += student["name"]
+        schedule[dept_id][month] += str(student["id"])  # Use student ID instead of name
 
 # 将字典转换为DataFrame
 dept_names = {dept["id"]: dept["name"] for dept in departments}
@@ -80,6 +80,9 @@ df = df.set_index('Month').transpose().reset_index()
 df.index.name = 'Department'
 df.reset_index(inplace=True)
 df.rename(columns={"index": "Department"}, inplace=True)
+
+# 添加rotation_duration列
+df["rotation_duration"] = [dept["rotation_duration"] for dept in departments]
 
 # 保存为Excel文件
 df.to_excel("rotation_schedule.xlsx", index=False, engine="openpyxl")
