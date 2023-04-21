@@ -82,7 +82,8 @@ df.reset_index(inplace=True)
 df.rename(columns={"index": "Department"}, inplace=True)
 
 # 添加rotation_duration列
-df["rotation_duration"] = [dept["rotation_duration"] for dept in departments]
+rotation_duration_data = [dept["rotation_duration"] for dept in departments]
+df.insert(2, "rotation_duration", rotation_duration_data)
 
 # 保存为Excel文件
 df.to_excel("rotation_schedule.xlsx", index=False, engine="openpyxl")

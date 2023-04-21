@@ -28,25 +28,5 @@
         "id": 6,
         "name": "科室6",
         "rotation_duration": "2"
-    },
-    {
-        "id": 7,
-        "name": "科室7",
-        "rotation_duration": "2"
-    },
-    {
-        "id": 8,
-        "name": "科室8",
-        "rotation_duration": "3"
-    },
-    {
-        "id": 9,
-        "name": "科室9",
-        "rotation_duration": "1"
-    },
-    {
-        "id": 10,
-        "name": "科室10",
-        "rotation_duration": "2"
     }
 ]
